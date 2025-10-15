@@ -776,12 +776,23 @@ class SimpleLLMCaption:
             pixel_values = TVF.normalize(pixel_values, [0.5], [0.5])
             pixel_values = pixel_values.to(device)
             
-            # Get vision features from SigLIP
+            # Get vision features from SigLIP (Joy Caption process)
             with torch.no_grad():
                 vision_outputs = clip_model(pixel_values=pixel_values, output_hidden_states=True)
                 
+                # Check output type and extract hidden states correctly
+                if hasattr(vision_outputs, 'hidden_states') and vision_outputs.hidden_states is not None:
+                    # Output is a model output object with hidden_states
+                    hidden_states = vision_outputs.hidden_states
+                elif isinstance(vision_outputs, tuple):
+                    # Output is a tuple (last_hidden_state, pooler_output, hidden_states)
+                    hidden_states = vision_outputs[2] if len(vision_outputs) > 2 else vision_outputs
+                else:
+                    # Output is just the hidden states tensor
+                    hidden_states = vision_outputs
+                
                 # Use image adapter to convert vision features to LLM embeddings
-                embedded_images = image_adapter(vision_outputs.hidden_states)
+                embedded_images = image_adapter(hidden_states)
             
             # Build prompt based on caption type and length (Joy Caption style)
             prompt_str = build_caption_prompt(caption_type, caption_length)
@@ -933,10 +944,19 @@ class SimpleLLMCaptionAdvanced:
             pixel_values = TVF.normalize(pixel_values, [0.5], [0.5])
             pixel_values = pixel_values.to(device)
             
-            # Get vision features and embed
+            # Get vision features and embed (Joy Caption process)
             with torch.no_grad():
                 vision_outputs = clip_model(pixel_values=pixel_values, output_hidden_states=True)
-                embedded_images = image_adapter(vision_outputs.hidden_states)
+                
+                # Extract hidden states correctly
+                if hasattr(vision_outputs, 'hidden_states') and vision_outputs.hidden_states is not None:
+                    hidden_states = vision_outputs.hidden_states
+                elif isinstance(vision_outputs, tuple):
+                    hidden_states = vision_outputs[2] if len(vision_outputs) > 2 else vision_outputs
+                else:
+                    hidden_states = vision_outputs
+                
+                embedded_images = image_adapter(hidden_states)
         
         # Build prompt using Joy Caption template
         prompt_str = build_caption_prompt(caption_type, caption_length)
@@ -1147,7 +1167,16 @@ class SimpleLLMCaptionBatch:
                 # Get vision features and embed (Joy Caption process)
                 with torch.no_grad():
                     vision_outputs = clip_model(pixel_values=pixel_values, output_hidden_states=True)
-                    embedded_images = image_adapter(vision_outputs.hidden_states)
+                    
+                    # Extract hidden states correctly
+                    if hasattr(vision_outputs, 'hidden_states') and vision_outputs.hidden_states is not None:
+                        hidden_states = vision_outputs.hidden_states
+                    elif isinstance(vision_outputs, tuple):
+                        hidden_states = vision_outputs[2] if len(vision_outputs) > 2 else vision_outputs
+                    else:
+                        hidden_states = vision_outputs
+                    
+                    embedded_images = image_adapter(hidden_states)
                 
                 # Create conversation (Joy Caption style)
                 conversation = [
