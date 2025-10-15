@@ -505,21 +505,37 @@ def process_caption_text(text, gender_age_replacement="", hair_replacement="",
     return text
 
 def get_available_llm_models():
-    """Get list of available LLM models from ComfyUI/models/LLM"""
+    """
+    Get list of Joy Caption-compatible LLM models.
+    Always shows AUTO-DOWNLOAD options first, then scans for Llama models.
+    """
     llm_path = Path(folder_paths.models_dir) / "LLM"
     if not llm_path.exists():
         llm_path.mkdir(parents=True, exist_ok=True)
     
-    models = []
+    # Always show AUTO-DOWNLOAD options first (recommended)
+    models = ["AUTO-DOWNLOAD: " + name for name in DEFAULT_MODELS.keys()]
+    
+    # Scan for existing Llama-based models (Joy Caption compatible)
+    compatible_keywords = ['llama', 'lexi', 'meta-llama']  # Joy Caption uses Llama models
+    incompatible_keywords = ['florence', 'clip', 'siglip', 'bert', 'vit']  # Vision/other models
+    
     for item in llm_path.iterdir():
         if item.is_dir():
-            # Check if it's a valid model directory (has config files)
-            if (item / "config.json").exists() or (item / "adapter_config.json").exists():
-                models.append(item.name)
-    
-    # If no models found, add default option
-    if not models:
-        models = ["AUTO-DOWNLOAD: " + name for name in DEFAULT_MODELS.keys()]
+            model_name_lower = item.name.lower()
+            
+            # Check if it's a valid model directory
+            if not ((item / "config.json").exists() or (item / "adapter_config.json").exists()):
+                continue
+            
+            # Skip incompatible models (Florence, CLIP, etc.)
+            if any(keyword in model_name_lower for keyword in incompatible_keywords):
+                continue
+            
+            # Only include Llama-based models (Joy Caption compatible)
+            if any(keyword in model_name_lower for keyword in compatible_keywords):
+                if item.name not in models:  # Avoid duplicates
+                    models.append(item.name)
     
     return models
 
@@ -543,10 +559,6 @@ class SimpleLLMCaptionLoader:
             "required": {
                 "llm_model": (get_available_llm_models(),),
                 "use_4bit": ("BOOLEAN", {"default": True}),
-                "vision_model_name": (
-                    ["openai/clip-vit-large-patch14", "openai/clip-vit-base-patch32"],
-                    {"default": "openai/clip-vit-large-patch14"}
-                ),
             }
         }
     
@@ -554,7 +566,7 @@ class SimpleLLMCaptionLoader:
     FUNCTION = "load_models"
     CATEGORY = "image/captioning"
     
-    def load_models(self, llm_model, use_4bit, vision_model_name):
+    def load_models(self, llm_model, use_4bit):
         """Load the LLM and vision models - auto-downloads if needed"""
         
         # Handle auto-download option

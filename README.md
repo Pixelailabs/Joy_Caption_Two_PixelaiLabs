@@ -153,8 +153,13 @@ Ready to use with Kohya, aitoolkit, or any training tool!
 Loads the LLM and Joy Caption adapter models.
 
 **Parameters:**
-- `llm_model` - Choose from dropdown or use AUTO-DOWNLOAD option
+- `llm_model` - Choose from dropdown (AUTO-DOWNLOAD options shown first)
+  - Recommended: "AUTO-DOWNLOAD: Llama-3.1-8B-Lexi-Uncensored-V2-nf4"
+  - Only shows Llama-based models (Joy Caption compatible)
+  - Automatically filters out incompatible models (Florence, CLIP, etc.)
 - `use_4bit` - Enable 4-bit quantization (recommended for 8GB VRAM)
+
+**Note:** Vision model (SigLIP) downloads automatically - no selection needed!
 
 ### 2. Simple LLM Caption
 Generate captions for single images.
