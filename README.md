@@ -39,7 +39,7 @@ A **fully automated** ComfyUI custom node that uses **Joy Caption Alpha Two** to
 
 ```bash
 cd ComfyUI/custom_nodes
-git clone https://github.com/YOUR_USERNAME/Joy_Caption_Two_PixelaiLabs.git
+git clone https://github.com/Pixelailabs/Joy_Caption_Two_PixelaiLabs.git
 ```
 
 ### Step 2: Install Requirements
