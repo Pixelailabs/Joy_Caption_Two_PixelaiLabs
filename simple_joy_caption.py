@@ -216,15 +216,24 @@ def download_model_from_hf(repo_id, model_name=None):
     
     local_dir = llm_path / model_name
     
+    # Check if model actually exists (not just the folder)
     if local_dir.exists():
-        print(f"Model already exists: {model_name}")
-        return str(local_dir)
+        # Verify model files exist (config.json and at least one safetensors file)
+        config_exists = (local_dir / "config.json").exists()
+        safetensors_exist = any(local_dir.glob("*.safetensors"))
+        
+        if config_exists and safetensors_exist:
+            print(f"✅ Model already downloaded: {model_name}")
+            return str(local_dir)
+        else:
+            print(f"⚠️ Model folder exists but files are incomplete. Re-downloading...")
+            # Don't delete folder - snapshot_download will resume
     
     print(f"\n{'='*80}")
     print(f"AUTO-DOWNLOADING MODEL: {model_name}")
     print(f"Repository: {repo_id}")
     print(f"Destination: {local_dir}")
-    print(f"This will take a few minutes...")
+    print(f"This will take a few minutes (~4-5GB)...")
     print(f"{'='*80}\n")
     
     try:
@@ -239,6 +248,7 @@ def download_model_from_hf(repo_id, model_name=None):
     except Exception as e:
         print(f"\n❌ Error downloading model: {e}")
         print(f"You can manually download from: https://huggingface.co/{repo_id}")
+        print(f"\nOr try again - the download will resume from where it stopped.")
         return None
 
 # Default recommended models  
