@@ -773,15 +773,6 @@ class SimpleLLMCaption:
         image_adapter = pipeline.get("image_adapter")
         device = pipeline["device"]
         
-        # Move models to GPU if they're on CPU (for VRAM efficiency)
-        print("🔄 Loading models to VRAM...")
-        if model.device.type == 'cpu':
-            model.to(device)
-        if clip_model.device.type == 'cpu':
-            clip_model.to(device)
-        if image_adapter is not None and next(image_adapter.parameters()).device.type == 'cpu':
-            image_adapter.to(device)
-        
         # Convert tensor to PIL and resize for SigLIP (384x384)
         pil_image = tensor_to_pil(image)
         pil_image = pil_image.resize((384, 384), Image.LANCZOS)
@@ -890,13 +881,7 @@ class SimpleLLMCaption:
             remove_jewelry=remove_jewelry
         )
         
-        # Offload models to CPU to free VRAM (for single image processing)
-        print("🔄 Unloading models from VRAM...")
-        model.to('cpu')
-        clip_model.to('cpu')
-        if image_adapter is not None:
-            image_adapter.to('cpu')
-        torch.cuda.empty_cache()
+        # Offload models to CPU to free VRAM
         comfy.model_management.soft_empty_cache()
         
         return (caption.strip(),)
@@ -953,15 +938,6 @@ class SimpleLLMCaptionAdvanced:
         clip_model = pipeline["clip_model"]
         image_adapter = pipeline.get("image_adapter")
         device = pipeline["device"]
-        
-        # Move models to GPU if they're on CPU (for VRAM efficiency)
-        print("🔄 Loading models to VRAM...")
-        if model.device.type == 'cpu':
-            model.to(device)
-        if clip_model.device.type == 'cpu':
-            clip_model.to(device)
-        if image_adapter is not None and next(image_adapter.parameters()).device.type == 'cpu':
-            image_adapter.to(device)
         
         # Convert tensor to PIL and resize for SigLIP
         pil_image = tensor_to_pil(image)
@@ -1082,13 +1058,7 @@ class SimpleLLMCaptionAdvanced:
         # Prepare negative prompt (user provides this manually)
         negative_prompt_text = negative_prompt.strip() if negative_prompt else ""
         
-        # Offload models to CPU to free VRAM (for single image processing)
-        print("🔄 Unloading models from VRAM...")
-        model.to('cpu')
-        clip_model.to('cpu')
-        if image_adapter is not None:
-            image_adapter.to('cpu')
-        torch.cuda.empty_cache()
+        # Offload models to CPU to free VRAM
         comfy.model_management.soft_empty_cache()
         
         return (positive_prompt.strip(), negative_prompt_text)
@@ -1156,16 +1126,6 @@ class SimpleLLMCaptionBatch:
         # Check if Joy Caption adapter is available
         if image_adapter is None:
             return ("Error: Joy Caption adapter required for batch processing. See console for download instructions.",)
-        
-        # Move models to GPU for batch processing (keep loaded for entire batch)
-        print("🔄 Loading models to VRAM for batch processing...")
-        if model.device.type == 'cpu':
-            model.to(device)
-        if clip_model.device.type == 'cpu':
-            clip_model.to(device)
-        if image_adapter is not None and next(image_adapter.parameters()).device.type == 'cpu':
-            image_adapter.to(device)
-        print("✅ Models loaded - ready for batch processing!")
         
         # Supported image formats
         image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tiff'}
@@ -1328,13 +1288,7 @@ class SimpleLLMCaptionBatch:
                 import traceback
                 traceback.print_exc()
         
-        # Offload models to CPU to free VRAM (after entire batch is complete)
-        print("\n🔄 Batch complete! Unloading models from VRAM...")
-        model.to('cpu')
-        clip_model.to('cpu')
-        if image_adapter is not None:
-            image_adapter.to('cpu')
-        torch.cuda.empty_cache()
+        # Offload models to free VRAM
         comfy.model_management.soft_empty_cache()
         
         result = f"✅ Batch complete!\n   Processed: {processed} images\n   Errors: {errors}\n   Output: {output_directory}"
