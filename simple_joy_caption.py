@@ -767,6 +767,9 @@ class SimpleLLMCaption:
                         body_size_replacement="", remove_tattoos=False, remove_jewelry=False):
         """Generate caption for the input image with optional text processing"""
         
+        # Reload models to GPU if they were unloaded
+        self.reload_models(pipeline)
+        
         model = pipeline["model"]
         tokenizer = pipeline["tokenizer"]
         clip_model = pipeline["clip_model"]
@@ -881,10 +884,59 @@ class SimpleLLMCaption:
             remove_jewelry=remove_jewelry
         )
         
-        # Offload models to CPU to free VRAM
-        comfy.model_management.soft_empty_cache()
+        # Unload models to free VRAM
+        self.unload_models(pipeline)
         
         return (caption.strip(),)
+    
+    def reload_models(self, pipeline):
+        """Reload models to GPU before captioning"""
+        try:
+            model = pipeline.get("model")
+            clip_model = pipeline.get("clip_model")
+            image_adapter = pipeline.get("image_adapter")
+            device = pipeline["device"]
+            
+            # Move models back to GPU
+            if model is not None and next(model.parameters()).device.type == 'cpu':
+                model.to(device)
+                print("🔄 Model reloaded to GPU")
+            
+            if clip_model is not None and next(clip_model.parameters()).device.type == 'cpu':
+                clip_model.to(device)
+                print("🔄 CLIP model reloaded to GPU")
+            
+            if image_adapter is not None and next(image_adapter.parameters()).device.type == 'cpu':
+                image_adapter.to(device)
+                print("🔄 Image adapter reloaded to GPU")
+                
+        except Exception as e:
+            print(f"⚠️ Warning during model reload: {e}")
+    
+    def unload_models(self, pipeline):
+        """Unload models from VRAM to free memory after captioning"""
+        try:
+            model = pipeline.get("model")
+            clip_model = pipeline.get("clip_model")
+            image_adapter = pipeline.get("image_adapter")
+            
+            # Move models to CPU
+            if model is not None:
+                model.to('cpu')
+            
+            if clip_model is not None:
+                clip_model.to('cpu')
+            
+            if image_adapter is not None:
+                image_adapter.to('cpu')
+            
+            # Clear CUDA cache
+            torch.cuda.empty_cache()
+            comfy.model_management.soft_empty_cache()
+            
+            print("✅ Models unloaded from VRAM")
+        except Exception as e:
+            print(f"⚠️ Warning during model unload: {e}")
 
 class SimpleLLMCaptionAdvanced:
     """Advanced node with custom prompts and more options"""
@@ -932,6 +984,9 @@ class SimpleLLMCaptionAdvanced:
                         append_to_caption="", negative_prompt="", lora_trigger="", gender_age_replacement="", hair_replacement="", 
                         body_size_replacement="", remove_tattoos=False, remove_jewelry=False, prefix="", suffix=""):
         """Generate caption with advanced options and text processing"""
+        
+        # Reload models to GPU if they were unloaded
+        self.reload_models(pipeline)
         
         model = pipeline["model"]
         tokenizer = pipeline["tokenizer"]
@@ -1058,10 +1113,59 @@ class SimpleLLMCaptionAdvanced:
         # Prepare negative prompt (user provides this manually)
         negative_prompt_text = negative_prompt.strip() if negative_prompt else ""
         
-        # Offload models to CPU to free VRAM
-        comfy.model_management.soft_empty_cache()
+        # Unload models to free VRAM
+        self.unload_models(pipeline)
         
         return (positive_prompt.strip(), negative_prompt_text)
+    
+    def reload_models(self, pipeline):
+        """Reload models to GPU before captioning"""
+        try:
+            model = pipeline.get("model")
+            clip_model = pipeline.get("clip_model")
+            image_adapter = pipeline.get("image_adapter")
+            device = pipeline["device"]
+            
+            # Move models back to GPU
+            if model is not None and next(model.parameters()).device.type == 'cpu':
+                model.to(device)
+                print("🔄 Model reloaded to GPU")
+            
+            if clip_model is not None and next(clip_model.parameters()).device.type == 'cpu':
+                clip_model.to(device)
+                print("🔄 CLIP model reloaded to GPU")
+            
+            if image_adapter is not None and next(image_adapter.parameters()).device.type == 'cpu':
+                image_adapter.to(device)
+                print("🔄 Image adapter reloaded to GPU")
+                
+        except Exception as e:
+            print(f"⚠️ Warning during model reload: {e}")
+    
+    def unload_models(self, pipeline):
+        """Unload models from VRAM to free memory after captioning"""
+        try:
+            model = pipeline.get("model")
+            clip_model = pipeline.get("clip_model")
+            image_adapter = pipeline.get("image_adapter")
+            
+            # Move models to CPU
+            if model is not None:
+                model.to('cpu')
+            
+            if clip_model is not None:
+                clip_model.to('cpu')
+            
+            if image_adapter is not None:
+                image_adapter.to('cpu')
+            
+            # Clear CUDA cache
+            torch.cuda.empty_cache()
+            comfy.model_management.soft_empty_cache()
+            
+            print("✅ Models unloaded from VRAM")
+        except Exception as e:
+            print(f"⚠️ Warning during model unload: {e}")
 
 class SimpleLLMCaptionBatch:
     """Batch process multiple images"""
@@ -1116,6 +1220,9 @@ class SimpleLLMCaptionBatch:
             return ("Error: Please specify an output directory for chronological naming",)
         
         os.makedirs(output_directory, exist_ok=True)
+        
+        # Reload models to GPU if they were unloaded
+        self.reload_models(pipeline)
         
         model = pipeline["model"]
         tokenizer = pipeline["tokenizer"]
@@ -1288,8 +1395,8 @@ class SimpleLLMCaptionBatch:
                 import traceback
                 traceback.print_exc()
         
-        # Offload models to free VRAM
-        comfy.model_management.soft_empty_cache()
+        # Unload models to free VRAM
+        self.unload_models(pipeline)
         
         result = f"✅ Batch complete!\n   Processed: {processed} images\n   Errors: {errors}\n   Output: {output_directory}"
         print(f"\n{'='*60}")
@@ -1297,8 +1404,56 @@ class SimpleLLMCaptionBatch:
         print(f"{'='*60}\n")
         
         return (result,)
+    
+    def reload_models(self, pipeline):
+        """Reload models to GPU before batch processing"""
+        try:
+            model = pipeline.get("model")
+            clip_model = pipeline.get("clip_model")
+            image_adapter = pipeline.get("image_adapter")
+            device = pipeline["device"]
+            
+            # Move models back to GPU
+            if model is not None and next(model.parameters()).device.type == 'cpu':
+                model.to(device)
+                print("🔄 Model reloaded to GPU")
+            
+            if clip_model is not None and next(clip_model.parameters()).device.type == 'cpu':
+                clip_model.to(device)
+                print("🔄 CLIP model reloaded to GPU")
+            
+            if image_adapter is not None and next(image_adapter.parameters()).device.type == 'cpu':
+                image_adapter.to(device)
+                print("🔄 Image adapter reloaded to GPU")
+                
+        except Exception as e:
+            print(f"⚠️ Warning during model reload: {e}")
+    
+    def unload_models(self, pipeline):
+        """Unload models from VRAM to free memory after batch processing"""
+        try:
+            model = pipeline.get("model")
+            clip_model = pipeline.get("clip_model")
+            image_adapter = pipeline.get("image_adapter")
+            
+            # Move models to CPU
+            if model is not None:
+                model.to('cpu')
+            
+            if clip_model is not None:
+                clip_model.to('cpu')
+            
+            if image_adapter is not None:
+                image_adapter.to('cpu')
+            
+            # Clear CUDA cache
+            torch.cuda.empty_cache()
+            comfy.model_management.soft_empty_cache()
+            
+            print("✅ Models unloaded from VRAM after batch processing")
+        except Exception as e:
+            print(f"⚠️ Warning during model unload: {e}")
 
 # Clean up on module unload
 def cleanup():
     torch.cuda.empty_cache()
-
