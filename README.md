@@ -12,6 +12,16 @@
 [Installation](#installation) • [Features](#features) • [Usage](#usage) • [License](#license)
 
 </div>
+---
+
+## 🔔 Latest Updates
+
+### November 6, 2025 - VRAM Management Update
+- ✅ **Automatic VRAM Management** - Models now automatically unload from VRAM after each caption generation
+- ✅ **Smart Reloading** - Models reload to GPU only when needed for the next caption
+- ✅ **Frees ~10GB VRAM** - VRAM is released between caption generations, preventing memory buildup
+- ✅ **No Manual Intervention** - Everything happens automatically in the background
+- 🎯 **Perfect for batch processing** - Process large datasets without running out of memory
 
 ---
 
