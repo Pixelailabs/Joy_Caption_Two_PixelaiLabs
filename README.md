@@ -12,7 +12,7 @@
 [Installation](#installation) • [Features](#features) • [Usage](#usage) • [License](#license)
 
 </div>
----
+
 
 ## 🔔 Latest Updates
 
